@@ -21,26 +21,27 @@ define(function(require) {
       'click button.editor-common-sidebar-preview': 'previewProject',
       'click button.editor-common-sidebar-preview-force': 'forcePreviewProject',
       'click button.editor-common-sidebar-export': 'exportProject',
+      'click button.editor-common-sidebar-exportLanguage': 'exportLanguage',
       'click button.editor-common-sidebar-close': 'closeProject',
       'click .editor-common-sidebar-preview-wrapper .dropdown button': 'toggleDropdown'
     },
 
     initialize: function(options) {
 
-        // Set form on view
-        if (options && options.form) {
-          this.form = options.form;
+      // Set form on view
+      if (options && options.form) {
+        this.form = options.form;
+      }
+      this.render();
+      this.listenTo(Origin, 'sidebar:resetButtons', this.resetButtons);
+      this.listenTo(Origin, 'sidebar:views:animateIn', this.animateViewIn);
+      _.defer(_.bind(function() {
+        this.setupView();
+        if (this.form) {
+          this.setupFieldsetFilters();
+          this.listenTo(Origin, 'editorSidebar:showErrors', this.onShowErrors);
         }
-        this.render();
-        this.listenTo(Origin, 'sidebar:resetButtons', this.resetButtons);
-        this.listenTo(Origin, 'sidebar:views:animateIn', this.animateViewIn);
-        _.defer(_.bind(function() {
-            this.setupView();
-            if (this.form) {
-              this.setupFieldsetFilters();
-              this.listenTo(Origin, 'editorSidebar:showErrors', this.onShowErrors);
-            }
-        }, this));
+      }, this));
     },
 
     postRender: function() {
@@ -50,16 +51,16 @@ define(function(require) {
     },
 
     setupView: function() {
-        this.listenTo(Origin, 'sidebar:views:remove', this.remove);
+      this.listenTo(Origin, 'sidebar:views:remove', this.remove);
     },
 
     setupFieldsetFilters: function() {
       var fieldsets = this.form.options.fieldsets;
       if (fieldsets.length > 0) {
-        this.$('.sidebar-item-inner').append(Handlebars.templates['sidebarDivide']({title: 'Filters'}));
+        this.$('.sidebar-item-inner').append(Handlebars.templates['sidebarDivide']({ title: 'Filters' }));
       }
       _.each(fieldsets, function(fieldset) {
-        this.$('.sidebar-item-inner').append(new SidebarFieldsetFilterView({model: new Backbone.Model(fieldset)}).$el);
+        this.$('.sidebar-item-inner').append(new SidebarFieldsetFilterView({ model: new Backbone.Model(fieldset) }).$el);
       }, this);
     },
 
@@ -87,7 +88,7 @@ define(function(require) {
 
     updateButton: function(buttonClass, updateText) {
       this.$(buttonClass)
-        .append(Handlebars.templates['sidebarUpdateButton']({updateText: updateText}))
+        .append(Handlebars.templates['sidebarUpdateButton']({ updateText: updateText }))
         .addClass('sidebar-updating')
         .attr('disabled', true)
         .find('span').eq(0).addClass('display-none');
@@ -100,7 +101,7 @@ define(function(require) {
     },
 
     animateViewIn: function() {
-        this.$el.velocity({'left': '0%', 'opacity': 1}, "easeOutQuad");
+      this.$el.velocity({ 'left': '0%', 'opacity': 1 }, "easeOutQuad");
     },
 
     navigateToEditorPage: function(page) {
@@ -141,6 +142,10 @@ define(function(require) {
 
     exportProject: function() {
       Origin.trigger('editorCommon:export');
+    },
+
+    exportLanguage: function() {
+      Origin.trigger('editorCommon:exportLanguage');
     },
 
     closeProject: function() {

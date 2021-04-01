@@ -14,13 +14,5 @@
     "serverKeyType": "RSA-2048",
     "subscriberEmail": "a.maimaiti@fkc-online.com"
   },
-  "sites": [
-    {
-      "subject": "localhost",
-      "altnames": [
-        "localhost"
-      ],
-      "renewAt": 1
-    }
-  ]
+  "sites": []
 }

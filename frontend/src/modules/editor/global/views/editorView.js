@@ -49,6 +49,7 @@ define(function(require) {
           var previewWindow = window.open('loading', 'preview');
           this.previewProject(previewWindow, isForceRebuild);
         },
+        'editorCommon:exportLanguage': this.exportLanguage,
         'editorCommon:export': this.exportProject
       });
       this.render();
@@ -64,7 +65,7 @@ define(function(require) {
     },
 
     previewProject: function(previewWindow, forceRebuild) {
-      if(Origin.editor.isPreviewPending) {
+      if (Origin.editor.isPreviewPending) {
         return;
       }
       Origin.editor.isPreviewPending = true;
@@ -72,7 +73,7 @@ define(function(require) {
       $('.editor-common-sidebar-preview-inner').addClass('display-none');
       $('.editor-common-sidebar-previewing').removeClass('display-none');
 
-      var url = 'api/output/'+Origin.constants.outputPlugin+'/preview/'+this.currentCourseId+'?force='+(forceRebuild === true);
+      var url = 'api/output/' + Origin.constants.outputPlugin + '/preview/' + this.currentCourseId + '?force=' + (forceRebuild === true);
       $.get(url, function(data, textStatus, jqXHR) {
         if (!data.success) {
           this.resetPreviewProgress();
@@ -99,10 +100,15 @@ define(function(require) {
       }.bind(this));
     },
 
+    exportLanguage: function(error) {
+      alert('export language');
+    },
+
+
     exportProject: function(error) {
       // TODO - very similar to export in project/views/projectView.js, remove duplication
       // aleady processing, don't try again
-      if(error || this.exporting) return;
+      if (error || this.exporting) return;
 
       var courseId = Origin.editor.data.course.get('_id');
       var tenantId = Origin.sessionModel.get('tenantId');
@@ -140,7 +146,7 @@ define(function(require) {
     },
 
     showExportAnimation: function(show, $btn) {
-      if(show !== false) {
+      if (show !== false) {
         $('.editor-common-sidebar-export-inner', $btn).addClass('display-none');
         $('.editor-common-sidebar-exporting', $btn).removeClass('display-none');
       } else {
@@ -150,7 +156,7 @@ define(function(require) {
     },
 
     downloadProject: function() {
-      if(Origin.editor.isDownloadPending) {
+      if (Origin.editor.isDownloadPending) {
         return;
       }
       $('.editor-common-sidebar-download-inner').addClass('display-none');
@@ -189,21 +195,21 @@ define(function(require) {
       var self = this;
 
       var pollUrl = function() {
-        $.get(url, function(jqXHR, textStatus, errorThrown) {
-          if (jqXHR.progress < "100") {
-            return;
-          }
-          clearInterval(pollId);
-          self.updateCoursePreview(previewWindow);
-          self.resetPreviewProgress();
-        }).fail(function(jqXHR, textStatus, errorThrown) {
-          clearInterval(pollId);
-          self.resetPreviewProgress();
-          Origin.Notify.alert({ type: 'error', text: errorThrown });
-          previewWindow.close();
-        });
-      }
-      // Check for updated progress every 3 seconds
+          $.get(url, function(jqXHR, textStatus, errorThrown) {
+            if (jqXHR.progress < "100") {
+              return;
+            }
+            clearInterval(pollId);
+            self.updateCoursePreview(previewWindow);
+            self.resetPreviewProgress();
+          }).fail(function(jqXHR, textStatus, errorThrown) {
+            clearInterval(pollId);
+            self.resetPreviewProgress();
+            Origin.Notify.alert({ type: 'error', text: errorThrown });
+            previewWindow.close();
+          });
+        }
+        // Check for updated progress every 3 seconds
       var pollId = setInterval(pollUrl, 3000);
     },
 
@@ -253,7 +259,7 @@ define(function(require) {
       $.post('api/content/clipboard/copy', postData, _.bind(function(jqXHR) {
         Origin.editor.clipboardId = jqXHR.clipboardId;
         this.showPasteZones(model.get('_type'));
-      }, this)).fail(_.bind(function (jqXHR, textStatus, errorThrown) {
+      }, this)).fail(_.bind(function(jqXHR, textStatus, errorThrown) {
         Origin.Notify.alert({
           type: 'error',
           text: Origin.l10n.t('app.errorcopy') + (jqXHR.message ? '\n\n' + jqXHR.message : '')
@@ -301,7 +307,7 @@ define(function(require) {
       });
     },
 
-    createModel: function (type) {
+    createModel: function(type) {
       var model;
       switch (type) {
         case 'contentObjects':
@@ -323,9 +329,9 @@ define(function(require) {
     renderCurrentEditorView: function() {
       Origin.trigger('editorView:removeSubViews');
 
-      if(this.currentView === 'menu') {
+      if (this.currentView === 'menu') {
         this.renderEditorMenu();
-      } else if(this.currentView === 'page') {
+      } else if (this.currentView === 'page') {
         this.renderEditorPage();
       }
 
@@ -355,8 +361,8 @@ define(function(require) {
     },
 
     /**
-    * Event handling
-    */
+     * Event handling
+     */
 
     onEditableHoverOver: function(e) {
       e && e.stopPropagation();

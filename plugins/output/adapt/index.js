@@ -5,13 +5,13 @@ const util = require('util');
 /**
  * Adapt Output plugin
  */
-function AdaptOutput() {
-}
+function AdaptOutput() {}
 util.inherits(AdaptOutput, OutputPlugin);
 
 AdaptOutput.prototype.publish = require('./publish');
 AdaptOutput.prototype.importsourcecheck = require('./importsourcecheck');
 AdaptOutput.prototype.importsource = require('./importsource');
 AdaptOutput.prototype.export = require('./export');
+AdaptOutput.prototype.exportLanguage = require('./exportLanguage');
 
 exports = module.exports = AdaptOutput;

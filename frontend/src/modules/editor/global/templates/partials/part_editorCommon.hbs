@@ -32,6 +32,14 @@
   </button>
   {{/ifHasPermissions}}
 
+  {{#ifHasPermissions "*/*:create,*/*:read,*/*:update,*/*:delete"}}
+  <button class="editor-common-sidebar-export action-secondary">
+    <span class="editor-common-sidebar-export-inner">{{ t 'app.exportLanguage'}}</span>
+    <span class="editor-common-sidebar-exporting display-none">
+      <i class="fa fa-circle-o-notch fa-spin"></i>{{ t 'app.exporting'}}
+    </span>
+  </button>
+  {{/ifHasPermissions}}
   <div class="separator" />
 
   <div class="sidebar-row">
