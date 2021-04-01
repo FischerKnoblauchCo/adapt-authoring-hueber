@@ -3,6 +3,8 @@ const archiver = require('archiver');
 const async = require('async');
 const fs = require('fs-extra');
 const path = require('path');
+const {exec} = require('child_process');
+
 // internal
 const assetmanager = require('../../../lib/assetmanager');
 const configuration = require('../../../lib/configuration');
@@ -26,15 +28,15 @@ function exportLanguage(pCourseId, request, response, next) {
   TENANT_ID = currentUser.tenant._id;
   COURSE_ID = pCourseId;
   COURSE_DIR = path.join(FRAMEWORK_ROOT_DIR, Constants.Folders.AllCourses, TENANT_ID, COURSE_ID);
+  COURSE_LANGUAGE_DOR = path.join(FRAMEWORK_ROOT_DIR, "languagefiles");
   EXPORT_DIR = path.join(configuration.tempDir, configuration.getConfig('masterTenantID'), Constants.Folders.Exports, currentUser._id);
 
   async.auto({
     ensureExportDir: ensureExportDir,
     generateLatestBuild: ['ensureExportDir', generateLatestBuild],
     copyFrameworkFiles: ['generateLatestBuild', copyFrameworkFiles],
-    writeThemeVariables: ['copyFrameworkFiles', writeThemeVariables],
-    writeCustomStyle: ['writeThemeVariables', writeCustomStyle],
-    copyCourseFiles: ['generateLatestBuild', copyCourseFiles]
+    copyCourseFiles: ['generateLatestBuild', copyCourseFiles],
+    generateLanguageFile: ['generateLatestBuild', generateLanguageFile],
   }, async.apply(zipExport, next));
 }
 
@@ -78,69 +80,7 @@ function copyFrameworkFiles(results, filesCopied) {
   });
 }
 
-function writeThemeVariables(results, variablesWritten) {
-  self.getCourseJSON(TENANT_ID, COURSE_ID, function(error, data) {
-    if (error) {
-      return variablesWritten(error);
-    }
-    const themeVariables = data.course[0].themeVariables;
-    const themeName = data.config[0]._theme;
-    const destinationFolder = path.join(EXPORT_DIR, 'src', 'theme', themeName);
 
-    if (!themeVariables) {
-      return variablesWritten(null);
-    }
-
-
-    database.getDatabase(function (err, db) {
-      if (err) {
-        return variablesWritten(err);
-      }
-
-      db.retrieve('themetype', {name: themeName}, {}, function(err, results) {
-        if (err || (results && results.length != 1)) {
-          return variablesWritten(err);
-        }
-
-        var theme = results[0];
-
-        self.writeThemeVariables(COURSE_ID, theme, themeVariables, destinationFolder, variablesWritten);
-      });
-    }, configuration.getConfig('dbName'));
-  });
-}
-
-function writeCustomStyle(results, styleWritten) {
-  const cm = new contentmanager.ContentManager();
-  cm.getContentPlugin('config', function(error, plugin) {
-    if(error) {
-      return styleWritten(error);
-    }
-    plugin.retrieve({ _courseId: COURSE_ID }, {}, function(error, docs) {
-      if(error) {
-        return styleWritten(error);
-      }
-      if(docs.length !== 1) {
-        return styleWritten(new Error(`Failed to find course '${COURSE_ID}'`));
-      }
-      const customLessDir = path.join(EXPORT_DIR, 'src', 'theme', docs[0]._theme);
-      self.writeCustomStyle(TENANT_ID, COURSE_ID, customLessDir, styleWritten);
-    });
-  });
-}
-
-// uses the metadata list to include only relevant plugin files
-function copyCustomPlugins(results, filesCopied) {
-  const src = path.join(FRAMEWORK_ROOT_DIR, Constants.Folders.Source);
-  const dest = path.join(EXPORT_DIR, Constants.Folders.Plugins);
-  _.each(metadata.pluginIncludes, function iterator(plugin) {
-    const pluginDir = path.join(src, plugin.folder, plugin.name);
-    fs.copy(pluginDir, path.join(dest, plugin.name), function(err) {
-      if (err) logger.log('error', err);
-    });
-  });
-  filesCopied();
-}
 
 // copies everything in the course folder
 function copyCourseFiles(results, filesCopied) {
@@ -154,33 +94,11 @@ function copyCourseFiles(results, filesCopied) {
   });
 }
 
-// copies used assets directly from the data folder
-function copyAssets(results, assetsCopied) {
-  const dest = path.join(EXPORT_DIR, Constants.Folders.Assets);
-  fs.ensureDir(dest, function(error) {
-    if (error) {
-      return assetsCopied(error);
-    }
-    async.each(Object.keys(metadata.assets), function iterator(assetKey, doneIterator) {
-      const oldId = metadata.assets[assetKey].oldId;
-      assetmanager.retrieveAsset({ _id:oldId }, function(error, results) {
-        if(error) {
-          return doneIterator(error);
-        }
-        filestorage.getStorage(results[0].repository, function gotStorage(error, storage) {
-          const srcPath = storage.resolvePath(results[0].path);
-          const destPath = path.join(dest, assetKey);
-          fs.copy(srcPath, destPath, doneIterator);
-        });
-      });
-    }, assetsCopied);
+function generateLanguageFile(next, error, results) {
+  //after that install npm packages and run export language commands
+  child = exec('npm i && grunt translate:export --format=csv', {cwd: path.join(EXPORT_DIR)}, (err, stdout, stderr) => {
   });
 }
-
-/**
-* post-processing
-*/
-
 function zipExport(next, error, results) {
   if(error) {
     return next(error);
@@ -192,7 +110,7 @@ function zipExport(next, error, results) {
   archive.on('error', async.apply(cleanUpExport, next));
   archive.on('warning', error => logger.log('warn', error));
   archive.pipe(output);
-  archive.glob('**/*', { cwd: path.join(EXPORT_DIR) });
+  archive.glob('**/*', { cwd: path.join(COURSE_LANGUAGE_DOR) });
   archive.finalize();
 }
 
