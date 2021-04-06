@@ -28,7 +28,7 @@ function exportLanguage(pCourseId, request, response, next) {
   TENANT_ID = currentUser.tenant._id;
   COURSE_ID = pCourseId;
   COURSE_DIR = path.join(FRAMEWORK_ROOT_DIR, Constants.Folders.AllCourses, TENANT_ID, COURSE_ID);
-  COURSE_LANGUAGE_DOR = path.join(FRAMEWORK_ROOT_DIR, "languagefiles");
+  COURSE_LANGUAGE_DIR = path.join(FRAMEWORK_ROOT_DIR, "languagefiles");
   EXPORT_DIR = path.join(configuration.tempDir, configuration.getConfig('masterTenantID'), Constants.Folders.Exports, currentUser._id);
 
   async.auto({
@@ -36,7 +36,7 @@ function exportLanguage(pCourseId, request, response, next) {
     generateLatestBuild: ['ensureExportDir', generateLatestBuild],
     copyFrameworkFiles: ['generateLatestBuild', copyFrameworkFiles],
     copyCourseFiles: ['generateLatestBuild', copyCourseFiles],
-    generateLanguageFile: ['generateLatestBuild', generateLanguageFile],
+    generateLanguageFile: ['generateLatestBuild', generateLanguageFile]
   }, async.apply(zipExport, next));
 }
 
@@ -80,8 +80,6 @@ function copyFrameworkFiles(results, filesCopied) {
   });
 }
 
-
-
 // copies everything in the course folder
 function copyCourseFiles(results, filesCopied) {
   const source = path.join(COURSE_DIR, Constants.Folders.Build, Constants.Folders.Course);
@@ -97,20 +95,18 @@ function copyCourseFiles(results, filesCopied) {
 function generateLanguageFile(next, error, results) {
   //after that install npm packages and run export language commands
   child = exec('npm i && grunt translate:export --format=csv', {cwd: path.join(EXPORT_DIR)}, (err, stdout, stderr) => {
-  });
-}
+  });}
 function zipExport(next, error, results) {
   if(error) {
     return next(error);
   }
   const archive = archiver('zip');
   const output = fs.createWriteStream(EXPORT_DIR +  '.zip');
-
   output.on('close', async.apply(cleanUpExport, next));
   archive.on('error', async.apply(cleanUpExport, next));
   archive.on('warning', error => logger.log('warn', error));
   archive.pipe(output);
-  archive.glob('**/*', { cwd: path.join(COURSE_LANGUAGE_DOR) });
+  archive.glob('**/*', { cwd: path.join(COURSE_LANGUAGE_DIR) });
   archive.finalize();
 }
 
