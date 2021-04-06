@@ -101,7 +101,43 @@ define(function(require) {
     },
 
     exportLanguage: function(error) {
-      alert('export language');
+      // TODO - very similar to export in project/views/projectView.js, remove duplication
+      // aleady processing, don't try again
+      if (error || this.exporting) return;
+
+      var courseId = Origin.editor.data.course.get('_id');
+      var tenantId = Origin.sessionModel.get('tenantId');
+
+      var $btn = $('button.editor-common-sidebar-exportLanguage');
+
+      this.showExportAnimation(true, $btn);
+      this.exporting = true;
+
+      var self = this;
+      $.ajax({
+        url: 'exportLanguage/' + tenantId + '/' + courseId,
+        success: function(data, textStatus, jqXHR) {
+          self.showExportAnimation(false, $btn);
+          self.exporting = false;
+
+          // get the zip
+          var form = document.createElement('form');
+          self.$el.append(form);
+          form.setAttribute('action', 'exportLanguage/' + tenantId + '/' + courseId + '/download.zip');
+          form.submit();
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+          self.showExportAnimation(false, $btn);
+          self.exporting = false;
+
+          Origin.Notify.alert({
+            type: 'error',
+            title: Origin.l10n.t('app.exporterrortitle'),
+            text: Origin.l10n.t('app.errorgeneric') +
+              Origin.l10n.t('app.debuginfo', { message: jqXHR.responseJSON.message })
+          });
+        }
+      });
     },
 
 

@@ -31,7 +31,6 @@ server.get('/exportLanguage/:tenant/:course/download.zip', function (req, res, n
     Constants.Folders.Exports,
     userId + '.zip'
   );
-  console.log(zipDir + 'zipdir');
   // get the course name
   app.contentmanager.getContentPlugin('course', function (error, plugin) {
     if (error) return handleError(error, res);
@@ -40,6 +39,7 @@ server.get('/exportLanguage/:tenant/:course/download.zip', function (req, res, n
       if (results.length !== 1) {
         return handleError(new Error('Export: cannot find course (' + courseId + ')'), res);
       }
+      console.log(`zipDir ${zipDir}`);
       fs.stat(zipDir, function(error, stat) {
         if (error) return handleError(error, res);
         var zipName = helpers.slugify(results[0].title,'export') + '.zip';

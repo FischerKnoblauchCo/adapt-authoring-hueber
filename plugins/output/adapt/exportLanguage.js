@@ -6,12 +6,8 @@ const path = require('path');
 const {exec} = require('child_process');
 
 // internal
-const assetmanager = require('../../../lib/assetmanager');
 const configuration = require('../../../lib/configuration');
-const contentmanager = require('../../../lib/contentmanager');
 const Constants = require('../../../lib/outputmanager').Constants;
-const database = require('../../../lib/database');
-const filestorage = require('../../../lib/filestorage');
 const logger = require('../../../lib/logger');
 const usermanager = require('../../../lib/usermanager');
 
@@ -36,7 +32,7 @@ function exportLanguage(pCourseId, request, response, next) {
     generateLatestBuild: ['ensureExportDir', generateLatestBuild],
     copyFrameworkFiles: ['generateLatestBuild', copyFrameworkFiles],
     copyCourseFiles: ['generateLatestBuild', copyCourseFiles],
-    generateLanguageFile: ['generateLatestBuild', generateLanguageFile]
+    generateLanguageFile: ['generateLatestBuild', generateLanguageFile],
   }, async.apply(zipExport, next));
 }
 
@@ -95,13 +91,25 @@ function copyCourseFiles(results, filesCopied) {
 function generateLanguageFile(next, error, results) {
   //after that install npm packages and run export language commands
   child = exec('npm i && grunt translate:export --format=csv', {cwd: path.join(EXPORT_DIR)}, (err, stdout, stderr) => {
-  });}
+    if(err) {
+      console.log('there is an error during language file generation ' + err);
+      return;
+    } 
+    if (stderr) {
+      console.log('there is a stderr during language file generation ' + stderr);
+      return;
+    }
+  }); 
+}
+
+
 function zipExport(next, error, results) {
   if(error) {
     return next(error);
   }
   const archive = archiver('zip');
   const output = fs.createWriteStream(EXPORT_DIR +  '.zip');
+  console.log('output  ````````````' + output);
   output.on('close', async.apply(cleanUpExport, next));
   archive.on('error', async.apply(cleanUpExport, next));
   archive.on('warning', error => logger.log('warn', error));
