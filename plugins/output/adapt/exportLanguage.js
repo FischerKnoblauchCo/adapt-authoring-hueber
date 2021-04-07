@@ -24,8 +24,8 @@ function exportLanguage(pCourseId, request, response, next) {
   TENANT_ID = currentUser.tenant._id;
   COURSE_ID = pCourseId;
   COURSE_DIR = path.join(FRAMEWORK_ROOT_DIR, Constants.Folders.AllCourses, TENANT_ID, COURSE_ID);
-  COURSE_LANGUAGE_DIR = path.join(FRAMEWORK_ROOT_DIR, "languagefiles");
   EXPORT_DIR = path.join(configuration.tempDir, configuration.getConfig('masterTenantID'), Constants.Folders.Exports, currentUser._id);
+  COURSE_LANGUAGE_DIR = path.join(EXPORT_DIR, "languagefiles");
 
   async.auto({
     ensureExportDir: ensureExportDir,
@@ -88,34 +88,26 @@ function copyCourseFiles(results, filesCopied) {
   });
 }
 
-function generateLanguageFile(next, error, results) {
-  //after that install npm packages and run export language commands
-  child = exec('npm i && grunt translate:export --format=csv', {cwd: path.join(EXPORT_DIR)}, (err, stdout, stderr) => {
-    if(err) {
-      console.log('there is an error during language file generation ' + err);
-      return;
-    } 
-    if (stderr) {
-      console.log('there is a stderr during language file generation ' + stderr);
-      return;
+function generateLanguageFile(results, filesCopied) { 
+    //after that install npm packages and run export language commands
+  child = exec('npm i && grunt translate:export --format=csv', {cwd: path.join(EXPORT_DIR)}, (error, stdout, stderr) => {
+    if (error) {
+      return filesCopied(error);
     }
-  }); 
-}
-
+  });
+  child.on('exit', filesCopied);
+};
 
 function zipExport(next, error, results) {
-  if(error) {
-    return next(error);
-  }
   const archive = archiver('zip');
   const output = fs.createWriteStream(EXPORT_DIR +  '.zip');
-  console.log('output  ````````````' + output);
+  archive.pipe(output);
+  archive.glob('**/*', { cwd: path.join(COURSE_LANGUAGE_DIR) });
+  // archive.glob('**/*', { cwd: path.join(EXPORT_DIR) });
+  archive.finalize();
   output.on('close', async.apply(cleanUpExport, next));
   archive.on('error', async.apply(cleanUpExport, next));
   archive.on('warning', error => logger.log('warn', error));
-  archive.pipe(output);
-  archive.glob('**/*', { cwd: path.join(COURSE_LANGUAGE_DIR) });
-  archive.finalize();
 }
 
 // remove the EXPORT_DIR, if there is one
